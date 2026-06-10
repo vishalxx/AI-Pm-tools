@@ -29,23 +29,23 @@
   .output-section { display: none; }
   .output-section.visible { display: block; }
   .summary-card { background: #fff; border: 1px solid #e5e5e3; border-radius: 12px; padding: 1.25rem; margin-bottom: 12px; }
-  .summary-card h3 { font-size: 13px; font-weight: 500; color: #6b6b6b; margin-bottom: 10px; }
+  .section-label { font-size: 13px; font-weight: 500; color: #6b6b6b; margin-bottom: 10px; }
   .summary-text { font-size: 14px; line-height: 1.7; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .result-card { background: #fff; border: 1px solid #e5e5e3; border-radius: 12px; padding: 1.25rem; }
-  .result-card h3 { font-size: 13px; font-weight: 500; color: #6b6b6b; margin-bottom: 10px; }
-  .item { font-size: 13px; color: #1a1a1a; padding: 6px 0; border-bottom: 1px solid #f0f0ee; line-height: 1.5; }
+  .item { font-size: 13px; color: #1a1a1a; padding: 7px 0; border-bottom: 1px solid #f0f0ee; line-height: 1.5; display: flex; align-items: flex-start; gap: 8px; }
   .item:last-child { border-bottom: none; }
-  .chip { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 20px; background: #f0f0ee; color: #6b6b6b; margin-left: 6px; }
+  .item-dot { width: 6px; height: 6px; border-radius: 50%; background: #d0d0ce; flex-shrink: 0; margin-top: 6px; }
+  .chip { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 20px; background: #f0f0ee; color: #6b6b6b; margin-left: 4px; white-space: nowrap; }
   .sentiment { display: flex; align-items: center; gap: 8px; padding: 7px 0; }
   .sentiment-bar { flex: 1; height: 6px; border-radius: 3px; background: #f0f0ee; overflow: hidden; }
-  .sentiment-fill { height: 100%; border-radius: 3px; }
+  .sentiment-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
   .sentiment-label { font-size: 12px; color: #6b6b6b; min-width: 68px; }
   .sentiment-pct { font-size: 12px; font-weight: 600; color: #1a1a1a; min-width: 30px; text-align: right; }
   .loading-row { display: flex; align-items: center; gap: 10px; padding: 1.5rem; color: #6b6b6b; font-size: 14px; }
   .spinner { width: 16px; height: 16px; border: 2px solid #e5e5e3; border-top-color: #1a1a1a; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .empty { font-size: 13px; color: #9b9b9b; font-style: italic; }
+  .empty { font-size: 13px; color: #9b9b9b; font-style: italic; padding: 6px 0; }
   @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -59,21 +59,17 @@
     <h2>Every meeting, fully captured.</h2>
     <p>Paste any transcript. Get decisions, action items, open questions, and sentiment — instantly.</p>
   </div>
-
   <div class="card">
     <label>OpenRouter API key (free)</label>
     <input type="password" id="api-key" placeholder="sk-or-..." />
     <p class="key-hint">Free at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> — sign up with Google, copy your key, paste here. Never stored.</p>
   </div>
-
   <div class="card">
     <label>Meeting transcript</label>
     <textarea id="transcript" placeholder="Paste your meeting transcript here..."></textarea>
     <button class="sample-btn" onclick="loadSample()">Load sample transcript</button>
   </div>
-
   <button class="btn" id="analyze-btn" onclick="analyze()">Extract insights →</button>
-
   <div class="output-section" id="output-section">
     <div id="loading-row" class="loading-row" style="display:none;">
       <div class="spinner"></div>
@@ -81,66 +77,170 @@
     </div>
     <div id="results-area" style="display:none;">
       <div class="summary-card">
-        <h3>Summary</h3>
+        <p class="section-label">Summary</p>
         <p class="summary-text" id="summary-out"></p>
       </div>
       <div class="grid">
-        <div class="result-card"><h3>Decisions made</h3><div id="decisions-out"></div></div>
-        <div class="result-card"><h3>Action items</h3><div id="actions-out"></div></div>
-        <div class="result-card"><h3>Open questions</h3><div id="questions-out"></div></div>
-        <div class="result-card"><h3>Meeting sentiment</h3><div id="sentiment-out"></div></div>
+        <div class="result-card"><p class="section-label">Decisions made</p><div id="decisions-out"></div></div>
+        <div class="result-card"><p class="section-label">Action items</p><div id="actions-out"></div></div>
+        <div class="result-card"><p class="section-label">Open questions</p><div id="questions-out"></div></div>
+        <div class="result-card"><p class="section-label">Meeting sentiment</p><div id="sentiment-out"></div></div>
       </div>
     </div>
   </div>
 </div>
 <script>
-const SAMPLE = `Sarah (PM): Alright everyone, let's get started. Main agenda — finalizing the Q3 roadmap and the onboarding redesign.\n\nMike (Eng): I've looked at the current drop-off data. We're losing 40% of users in step 3 of onboarding. The form is too long.\n\nPriya (Design): I agree. I had a proposal ready — we can break it into a progressive flow, 3 steps max. I can have mocks by Friday.\n\nSarah: That's great. Let's commit to that. Priya, can you also sync with Mike on the API constraints before you finalize?\n\nPriya: Sure, I'll set up a 30-min call Thursday.\n\nMike: One thing I'm not clear on — do we have sign-off from legal on the data collection changes? Because that might affect what we can collect in step 2.\n\nSarah: Good catch. I'll follow up with legal today and loop you both in by EOD.\n\nTom (Data): I pulled the cohort analysis. Users who complete onboarding in under 4 minutes have 3x retention at 30 days. So speed is the key metric.\n\nSarah: Perfect, let's make that our north star — onboarding completion under 4 minutes. Agreed?\n\nMike: Agreed.\nPriya: Yes.\n\nSarah: Okay. Also — Q3 roadmap. We're pushing the integrations feature to Q4. Not enough eng capacity.\n\nMike: That's fine, we needed more discovery on that anyway.\n\nSarah: Any blockers anyone wants to flag before we close?\n\nMike: Just the legal dependency. Everything else is clear.\n\nSarah: Got it. Alright, wrapping up.`;
+const SAMPLE = `Sarah (PM): Alright everyone, let's get started. Main agenda — finalizing the Q3 roadmap and the onboarding redesign.
+
+Mike (Eng): I've looked at the current drop-off data. We're losing 40% of users in step 3 of onboarding. The form is too long.
+
+Priya (Design): I agree. I had a proposal ready — we can break it into a progressive flow, 3 steps max. I can have mocks by Friday.
+
+Sarah: That's great. Let's commit to that. Priya, can you also sync with Mike on the API constraints before you finalize?
+
+Priya: Sure, I'll set up a 30-min call Thursday.
+
+Mike: One thing I'm not clear on — do we have sign-off from legal on the data collection changes? Because that might affect what we can collect in step 2.
+
+Sarah: Good catch. I'll follow up with legal today and loop you both in by EOD.
+
+Tom (Data): I pulled the cohort analysis. Users who complete onboarding in under 4 minutes have 3x retention at 30 days. So speed is the key metric.
+
+Sarah: Perfect, let's make that our north star — onboarding completion under 4 minutes. Agreed?
+
+Mike: Agreed.
+Priya: Yes.
+
+Sarah: Okay. Also — Q3 roadmap. We're pushing the integrations feature to Q4. Not enough eng capacity.
+
+Mike: That's fine, we needed more discovery on that anyway.
+
+Sarah: Any blockers anyone wants to flag before we close?
+
+Mike: Just the legal dependency. Everything else is clear.
+
+Sarah: Got it. Alright, wrapping up.`;
 
 function loadSample() { document.getElementById('transcript').value = SAMPLE; }
+
+function parseLines(text, header) {
+  const idx = text.toUpperCase().indexOf(header.toUpperCase());
+  if (idx === -1) return [];
+  const start = text.indexOf('\n', idx) + 1;
+  const nextIdx = text.search(new RegExp(/\n[A-Z][A-Z\s]+:\n/, 'g'));
+  const block = text.slice(start, nextIdx > start ? nextIdx : text.length);
+  return block.split('\n')
+    .map(l => l.replace(/^[-*•\d.]+\s*/, '').trim())
+    .filter(l => l.length > 5);
+}
 
 async function analyze() {
   const apiKey = document.getElementById('api-key').value.trim();
   const transcript = document.getElementById('transcript').value.trim();
-  if (!apiKey) { alert('Please enter your OpenRouter API key — get one free at openrouter.ai'); return; }
+  if (!apiKey) { alert('Please enter your OpenRouter API key.'); return; }
   if (!transcript) { alert('Please paste a transcript first.'); return; }
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true; btn.textContent = 'Analyzing...';
   document.getElementById('output-section').classList.add('visible');
   document.getElementById('loading-row').style.display = 'flex';
   document.getElementById('results-area').style.display = 'none';
-  const msgs = ['Analyzing transcript...', 'Extracting decisions...', 'Identifying action items...', 'Calculating sentiment...'];
+
+  const msgs = ['Analyzing transcript...','Extracting decisions...','Identifying action items...','Calculating sentiment...'];
   let i = 0;
-  const interval = setInterval(() => { i=(i+1)%msgs.length; document.getElementById('loading-text').textContent = msgs[i]; }, 1800);
+  const interval = setInterval(()=>{ i=(i+1)%msgs.length; document.getElementById('loading-text').textContent=msgs[i]; }, 1800);
+
   try {
+    const prompt = `Analyze this meeting transcript. Respond with these EXACT sections and headers:
+
+SUMMARY:
+Write 2-3 sentences summarizing what was accomplished.
+
+DECISIONS:
+List each decision on its own line starting with a dash. Max 4 decisions.
+
+ACTION ITEMS:
+List each action item on its own line as: "- [Owner]: task description". Max 5 items.
+
+OPEN QUESTIONS:
+List each unresolved question on its own line starting with a dash. Max 4 questions.
+
+SENTIMENT:
+Write exactly three lines:
+Aligned: [number 0-100]
+Uncertain: [number 0-100]
+Blocked: [number 0-100]
+(The three numbers must add up to 100)
+
+Transcript:
+${transcript}`;
+
     const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
       body: JSON.stringify({
         model: 'meta-llama/llama-3.3-8b-instruct:free',
-        messages: [{ role: 'user', content: `Analyze this meeting transcript and return ONLY a JSON object with these keys:\n- summary: 2-3 sentence plain-text summary\n- decisions: array of strings (max 4)\n- actions: array of objects with "task" and "owner" fields (max 5)\n- questions: array of strings, open questions not yet resolved (max 4)\n- sentiment: object with "aligned" (0-100), "uncertain" (0-100), "blocked" (0-100) — must sum to 100\n\nTranscript:\n${transcript}\n\nReturn ONLY the JSON. No markdown, no preamble.` }]
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3
       })
     });
+
     const data = await resp.json();
     clearInterval(interval);
     document.getElementById('loading-row').style.display = 'none';
+
+    if (data.error) throw new Error(data.error.message || 'API error');
+
     const raw = data.choices[0].message.content;
-    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
-    document.getElementById('summary-out').textContent = parsed.summary || '';
-    const decisionsEl = document.getElementById('decisions-out');
-    decisionsEl.innerHTML = parsed.decisions?.length ? parsed.decisions.map(d=>`<div class="item">${d}</div>`).join('') : '<div class="empty">No clear decisions found</div>';
-    const actionsEl = document.getElementById('actions-out');
-    actionsEl.innerHTML = parsed.actions?.length ? parsed.actions.map(a=>`<div class="item">${a.task}${a.owner?`<span class="chip">${a.owner}</span>`:''}</div>`).join('') : '<div class="empty">No action items found</div>';
-    const questionsEl = document.getElementById('questions-out');
-    questionsEl.innerHTML = parsed.questions?.length ? parsed.questions.map(q=>`<div class="item">${q}</div>`).join('') : '<div class="empty">No open questions</div>';
-    const s = parsed.sentiment || {};
-    const colors = { aligned:'#1D9E75', uncertain:'#BA7517', blocked:'#E24B4A' };
-    const labels = { aligned:'Aligned', uncertain:'Uncertain', blocked:'Blocked' };
-    document.getElementById('sentiment-out').innerHTML = Object.entries(s).map(([k,v])=>`<div class="sentiment"><span class="sentiment-label">${labels[k]||k}</span><div class="sentiment-bar"><div class="sentiment-fill" style="width:${v}%;background:${colors[k]||'#888'}"></div></div><span class="sentiment-pct">${Math.round(v)}%</span></div>`).join('');
+
+    // Parse summary
+    const summaryMatch = raw.match(/SUMMARY:\n([\s\S]*?)(?=\n[A-Z]+:|$)/i);
+    document.getElementById('summary-out').textContent = summaryMatch ? summaryMatch[1].trim() : 'See full output below.';
+
+    // Parse decisions
+    const decisionsMatch = raw.match(/DECISIONS:\n([\s\S]*?)(?=\nACTION|$)/i);
+    const decisions = decisionsMatch ? decisionsMatch[1].trim().split('\n').map(l=>l.replace(/^[-*•]\s*/,'')).filter(l=>l.length>3) : [];
+    document.getElementById('decisions-out').innerHTML = decisions.length
+      ? decisions.map(d=>`<div class="item"><span class="item-dot"></span><span>${d}</span></div>`).join('')
+      : '<div class="empty">No clear decisions found</div>';
+
+    // Parse action items
+    const actionsMatch = raw.match(/ACTION ITEMS:\n([\s\S]*?)(?=\nOPEN|$)/i);
+    const actions = actionsMatch ? actionsMatch[1].trim().split('\n').map(l=>l.replace(/^[-*•]\s*/,'')).filter(l=>l.length>3) : [];
+    document.getElementById('actions-out').innerHTML = actions.length
+      ? actions.map(a => {
+          const ownerMatch = a.match(/^\[?([A-Za-z]+)\]?:\s*(.*)/);
+          return ownerMatch
+            ? `<div class="item"><span class="item-dot"></span><span>${ownerMatch[2]}<span class="chip">${ownerMatch[1]}</span></span></div>`
+            : `<div class="item"><span class="item-dot"></span><span>${a}</span></div>`;
+        }).join('')
+      : '<div class="empty">No action items found</div>';
+
+    // Parse questions
+    const questionsMatch = raw.match(/OPEN QUESTIONS:\n([\s\S]*?)(?=\nSENTIMENT|$)/i);
+    const questions = questionsMatch ? questionsMatch[1].trim().split('\n').map(l=>l.replace(/^[-*•]\s*/,'')).filter(l=>l.length>3) : [];
+    document.getElementById('questions-out').innerHTML = questions.length
+      ? questions.map(q=>`<div class="item"><span class="item-dot"></span><span>${q}</span></div>`).join('')
+      : '<div class="empty">No open questions</div>';
+
+    // Parse sentiment
+    const sentimentMatch = raw.match(/SENTIMENT:\n([\s\S]*?)$/i);
+    const sentimentBlock = sentimentMatch ? sentimentMatch[1] : '';
+    const aligned = parseInt(sentimentBlock.match(/Aligned:\s*(\d+)/i)?.[1] || '60');
+    const uncertain = parseInt(sentimentBlock.match(/Uncertain:\s*(\d+)/i)?.[1] || '30');
+    const blocked = parseInt(sentimentBlock.match(/Blocked:\s*(\d+)/i)?.[1] || '10');
+    const colors = { Aligned:'#1D9E75', Uncertain:'#BA7517', Blocked:'#E24B4A' };
+    document.getElementById('sentiment-out').innerHTML = [['Aligned',aligned],['Uncertain',uncertain],['Blocked',blocked]]
+      .map(([k,v])=>`<div class="sentiment"><span class="sentiment-label">${k}</span><div class="sentiment-bar"><div class="sentiment-fill" style="width:${v}%;background:${colors[k]}"></div></div><span class="sentiment-pct">${v}%</span></div>`).join('');
+
     document.getElementById('results-area').style.display = 'block';
+
   } catch(err) {
     clearInterval(interval);
     document.getElementById('loading-row').style.display = 'none';
-    document.getElementById('summary-out').textContent = 'Error: Check your API key at openrouter.ai and try again.';
+    const msg = err.message?.includes('401') ? 'Invalid API key — check openrouter.ai/keys.'
+      : err.message?.includes('429') ? 'Rate limit — wait a moment and try again.'
+      : 'Error: ' + (err.message || 'Something went wrong.');
+    document.getElementById('summary-out').textContent = msg;
     document.getElementById('results-area').style.display = 'block';
     console.error(err);
   }

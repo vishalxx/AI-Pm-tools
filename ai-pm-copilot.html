@@ -7,9 +7,8 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9f9f8; color: #1a1a1a; min-height: 100vh; }
-  .topbar { background: #fff; border-bottom: 1px solid #e5e5e3; padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
-  .topbar-left { display: flex; align-items: center; gap: 10px; }
-  .topbar h1 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .topbar { background: #fff; border-bottom: 1px solid #e5e5e3; padding: 0 2rem; height: 52px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 10; }
+  .topbar h1 { font-size: 15px; font-weight: 600; }
   .badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #e8f4fd; color: #1a6db5; font-weight: 500; }
   .container { max-width: 760px; margin: 0 auto; padding: 2.5rem 1.5rem; }
   .hero { margin-bottom: 2.5rem; }
@@ -26,7 +25,7 @@
   .btn:hover:not(:disabled) { background: #333; }
   .output-section { display: none; }
   .output-section.visible { display: block; }
-  .tab-bar { display: flex; gap: 0; margin-bottom: 0; border-bottom: 1px solid #e5e5e3; }
+  .tab-bar { display: flex; border-bottom: 1px solid #e5e5e3; }
   .tab { font-size: 13px; padding: 8px 18px 10px; cursor: pointer; color: #6b6b6b; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; font-weight: 500; }
   .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
   .tab-content { display: none; }
@@ -37,68 +36,52 @@
   .loading-row { display: flex; align-items: center; gap: 10px; padding: 1.5rem; color: #6b6b6b; font-size: 14px; }
   .spinner { width: 16px; height: 16px; border: 2px solid #e5e5e3; border-top-color: #1a1a1a; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .key-row input { width: 100%; font-size: 13px; font-family: inherit; border: 1px solid #e5e5e3; border-radius: 8px; padding: 8px 12px; background: #f9f9f8; color: #1a1a1a; outline: none; }
-  .key-row input:focus { border-color: #1a1a1a; }
+  input[type=password] { width: 100%; font-size: 13px; font-family: inherit; border: 1px solid #e5e5e3; border-radius: 8px; padding: 8px 12px; background: #f9f9f8; color: #1a1a1a; outline: none; }
+  input[type=password]:focus { border-color: #1a1a1a; }
   .key-hint { font-size: 12px; color: #9b9b9b; margin-top: 6px; }
   .key-hint a { color: #1a6db5; }
 </style>
 </head>
 <body>
 <div class="topbar">
-  <div class="topbar-left">
-    <h1>AI PM Copilot</h1>
-    <span class="badge">powered by Claude</span>
-  </div>
+  <h1>AI PM Copilot</h1>
+  <span class="badge">powered by Claude</span>
 </div>
 <div class="container">
   <div class="hero">
     <h2>From problem to PRD in seconds.</h2>
     <p>Describe your product problem. Get a full PRD, user stories, and RICE prioritization — powered by AI.</p>
   </div>
-
   <div class="card">
     <label>OpenRouter API key (free)</label>
-    <div class="key-row">
-      <input type="password" id="api-key" placeholder="sk-or-..." />
-    </div>
+    <input type="password" id="api-key" placeholder="sk-or-..." />
     <p class="key-hint">Free at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> — sign up with Google, copy your key, paste here. Never stored.</p>
   </div>
-
   <div class="card">
     <label>Product problem statement</label>
     <textarea id="problem" placeholder="e.g. Users abandon our onboarding flow because setup takes too long and they don't understand the value before completing it..."></textarea>
   </div>
-
-  <div class="row" style="margin-bottom: 1rem;">
+  <div class="row" style="margin-bottom:1rem;">
     <div class="card" style="margin-bottom:0">
       <label>Product type</label>
       <select id="product-type">
-        <option>B2B SaaS</option>
-        <option>Consumer app</option>
-        <option>Mobile</option>
-        <option>Platform / API</option>
-        <option>Hardware + software</option>
+        <option>B2B SaaS</option><option>Consumer app</option><option>Mobile</option><option>Platform / API</option><option>Hardware + software</option>
       </select>
     </div>
     <div class="card" style="margin-bottom:0">
       <label>Focus area</label>
       <select id="focus">
-        <option>Full PRD + stories + priority</option>
-        <option>PRD only</option>
-        <option>User stories only</option>
-        <option>Prioritization only</option>
+        <option>Full PRD + stories + priority</option><option>PRD only</option><option>User stories only</option><option>Prioritization only</option>
       </select>
     </div>
   </div>
-
   <button class="btn" id="generate-btn" onclick="generate()">Generate →</button>
-
   <div class="output-section" id="output-section">
     <div class="tab-bar-wrapper">
       <div class="tab-bar">
-        <button class="tab active" onclick="switchTab('prd', this)">PRD</button>
-        <button class="tab" onclick="switchTab('stories', this)">User stories</button>
-        <button class="tab" onclick="switchTab('priority', this)">Prioritization</button>
+        <button class="tab active" onclick="switchTab('prd',this)">PRD</button>
+        <button class="tab" onclick="switchTab('stories',this)">User stories</button>
+        <button class="tab" onclick="switchTab('priority',this)">Prioritization</button>
       </div>
     </div>
     <div class="output-card">
@@ -114,15 +97,34 @@
 </div>
 <script>
 function switchTab(name, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
 }
+
+function extractSection(text, ...markers) {
+  for (const marker of markers) {
+    const idx = text.toUpperCase().indexOf(marker.toUpperCase());
+    if (idx !== -1) {
+      const start = text.indexOf('\n', idx) + 1;
+      const nextHeaders = ['PRD:', 'STORIES:', 'PRIORITY:', 'USER STORIES:', 'PRIORITIZATION:',
+        '===', '---', 'SECTION 2', 'SECTION 3'];
+      let end = text.length;
+      for (const h of nextHeaders) {
+        const hi = text.toUpperCase().indexOf(h, start + 10);
+        if (hi !== -1 && hi < end) end = hi;
+      }
+      return text.slice(start, end).trim();
+    }
+  }
+  return text.trim();
+}
+
 async function generate() {
   const apiKey = document.getElementById('api-key').value.trim();
   const problem = document.getElementById('problem').value.trim();
-  if (!apiKey) { alert('Please enter your OpenRouter API key — get one free at openrouter.ai'); return; }
+  if (!apiKey) { alert('Please enter your OpenRouter API key.'); return; }
   if (!problem) { alert('Please enter a problem statement.'); return; }
   const productType = document.getElementById('product-type').value;
   const focus = document.getElementById('focus').value;
@@ -130,36 +132,61 @@ async function generate() {
   btn.disabled = true; btn.textContent = 'Generating...';
   document.getElementById('output-section').classList.add('visible');
   document.getElementById('loading-indicator').style.display = 'flex';
-  document.getElementById('prd-content').textContent = '';
-  document.getElementById('stories-content').textContent = '';
-  document.getElementById('priority-content').textContent = '';
-  const msgs = ['Generating your PRD...', 'Writing user stories...', 'Building prioritization framework...'];
+  ['prd-content','stories-content','priority-content'].forEach(id => document.getElementById(id).textContent = '');
+
+  const msgs = ['Generating your PRD...','Writing user stories...','Building prioritization framework...'];
   let idx = 0;
   const loadingEl = document.getElementById('loading-text');
-  const interval = setInterval(() => { idx = (idx+1)%msgs.length; loadingEl.textContent = msgs[idx]; }, 2000);
+  const interval = setInterval(()=>{ idx=(idx+1)%msgs.length; loadingEl.textContent=msgs[idx]; }, 2200);
+
   try {
-    const prompt = `You are a senior product manager. Given this product problem statement, generate structured PM artifacts.\n\nProblem: ${problem}\nProduct type: ${productType}\nFocus: ${focus}\n\nReturn ONLY a JSON object with these three keys:\n- prd: A full PRD with sections: Overview, Problem Statement, Goals & Success Metrics, User Personas, Scope (In/Out), Key Features, Technical Considerations, Risks\n- stories: 4-6 user stories in "As a [user], I want to [action], so that [outcome]" format with acceptance criteria for each\n- priority: A prioritization table using RICE framework (Reach, Impact, Confidence, Effort) for the top features, with a recommended roadmap sequence\n\nFormat each value as clean readable plain text (no markdown, use ALL CAPS for section names). Be specific and actionable. No preamble.`;
+    const prompt = `You are a senior product manager. Generate PM artifacts for this problem.
+
+Problem: ${problem}
+Product type: ${productType}
+
+Write three clearly separated sections. Use these EXACT headers:
+
+PRD:
+Write a full PRD covering: Overview, Problem Statement, Goals and Success Metrics, User Personas, Scope, Key Features, Technical Considerations, Risks. Use plain text with ALL CAPS sub-headers.
+
+USER STORIES:
+Write 5 user stories in "As a [user], I want [action], so that [outcome]" format. Include 2-3 acceptance criteria per story.
+
+PRIORITIZATION:
+List the top 5 features with RICE scores (Reach 1-10, Impact 1-10, Confidence %, Effort in weeks). Add a recommended build sequence.
+
+Be specific and actionable. No JSON, just plain text with the three headers above.`;
+
     const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
       body: JSON.stringify({
         model: 'meta-llama/llama-3.3-8b-instruct:free',
-        messages: [{ role: 'user', content: prompt }]
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7
       })
     });
+
     const data = await resp.json();
     clearInterval(interval);
     document.getElementById('loading-indicator').style.display = 'none';
+
+    if (data.error) throw new Error(data.error.message || 'API error');
+
     const raw = data.choices[0].message.content;
-    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
-    document.getElementById('prd-content').textContent = parsed.prd || '';
-    document.getElementById('stories-content').textContent = parsed.stories || '';
-    document.getElementById('priority-content').textContent = parsed.priority || '';
+
+    document.getElementById('prd-content').textContent = extractSection(raw, 'PRD:', 'PRD\n');
+    document.getElementById('stories-content').textContent = extractSection(raw, 'USER STORIES:', 'STORIES:');
+    document.getElementById('priority-content').textContent = extractSection(raw, 'PRIORITIZATION:', 'PRIORITY:');
+
   } catch(err) {
     clearInterval(interval);
     document.getElementById('loading-indicator').style.display = 'none';
-    document.getElementById('prd-content').textContent = 'Error: Check your API key at openrouter.ai and try again.';
-    console.error(err);
+    const msg = err.message?.includes('401') ? 'Invalid API key — check openrouter.ai/keys and try again.'
+      : err.message?.includes('429') ? 'Rate limit hit — wait a moment and try again.'
+      : 'Error: ' + (err.message || 'Something went wrong. Try again.');
+    document.getElementById('prd-content').textContent = msg;
   }
   btn.disabled = false; btn.textContent = 'Generate →';
 }
