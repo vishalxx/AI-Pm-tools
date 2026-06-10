@@ -52,7 +52,7 @@
 <body>
 <div class="topbar">
   <h1>Ambient Meeting Intelligence</h1>
-  <span class="badge">powered by Claude</span>
+  <span class="badge">Meeting AI</span>
 </div>
 <div class="container">
   <div class="hero">
@@ -60,9 +60,8 @@
     <p>Paste any transcript. Get decisions, action items, open questions, and sentiment — instantly.</p>
   </div>
   <div class="card">
-    <label>OpenRouter API key (free)</label>
-    <input type="password" id="api-key" placeholder="sk-or-..." />
-    <p class="key-hint">Free at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> — sign up with Google, copy your key, paste here. Never stored.</p>
+    <label>AI-powered meeting intelligence demo</label>
+    <p class="key-hint">No API key needed. This demo runs securely through a Vercel backend.</p>
   </div>
   <div class="card">
     <label>Meeting transcript</label>
@@ -135,9 +134,7 @@ function parseLines(text, header) {
 }
 
 async function analyze() {
-  const apiKey = document.getElementById('api-key').value.trim();
   const transcript = document.getElementById('transcript').value.trim();
-  if (!apiKey) { alert('Please enter your OpenRouter API key.'); return; }
   if (!transcript) { alert('Please paste a transcript first.'); return; }
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true; btn.textContent = 'Analyzing...';
@@ -174,23 +171,26 @@ Blocked: [number 0-100]
 Transcript:
 ${transcript}`;
 
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.1-8b-instruct:free',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3
-      })
-    });
+const resp = await fetch('/api/meeting', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    transcript: transcript
+  })
+});
 
-    const data = await resp.json();
-    clearInterval(interval);
-    document.getElementById('loading-row').style.display = 'none';
+const data = await resp.json();
 
-    if (data.error) throw new Error(data.error.message || 'API error');
+clearInterval(interval);
+document.getElementById('loading-row').style.display = 'none';
 
-    const raw = data.choices[0].message.content;
+if (!resp.ok) {
+  throw new Error(data.error || 'API error');
+}
+
+const raw = data.result;
 
     // Parse summary
     const summaryMatch = raw.match(/SUMMARY:\n([\s\S]*?)(?=\n[A-Z]+:|$)/i);
