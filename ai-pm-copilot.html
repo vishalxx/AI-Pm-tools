@@ -21,7 +21,7 @@
   textarea:focus { border-color: #1a1a1a; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   select { width: 100%; font-size: 14px; font-family: inherit; border: 1px solid #e5e5e3; border-radius: 8px; padding: 9px 12px; background: #f9f9f8; color: #1a1a1a; outline: none; }
-  .btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 1.5rem; letter-spacing: 0.01em; }
+  .btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 1.5rem; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn:hover:not(:disabled) { background: #333; }
   .output-section { display: none; }
@@ -37,10 +37,10 @@
   .loading-row { display: flex; align-items: center; gap: 10px; padding: 1.5rem; color: #6b6b6b; font-size: 14px; }
   .spinner { width: 16px; height: 16px; border: 2px solid #e5e5e3; border-top-color: #1a1a1a; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .key-row { display: flex; gap: 8px; margin-bottom: 1rem; }
-  .key-row input { flex: 1; font-size: 13px; font-family: inherit; border: 1px solid #e5e5e3; border-radius: 8px; padding: 8px 12px; background: #f9f9f8; color: #1a1a1a; outline: none; }
+  .key-row input { width: 100%; font-size: 13px; font-family: inherit; border: 1px solid #e5e5e3; border-radius: 8px; padding: 8px 12px; background: #f9f9f8; color: #1a1a1a; outline: none; }
   .key-row input:focus { border-color: #1a1a1a; }
-  .key-hint { font-size: 12px; color: #9b9b9b; margin-top: 4px; }
+  .key-hint { font-size: 12px; color: #9b9b9b; margin-top: 6px; }
+  .key-hint a { color: #1a6db5; }
 </style>
 </head>
 <body>
@@ -57,11 +57,11 @@
   </div>
 
   <div class="card">
-    <label>Anthropic API key</label>
+    <label>OpenRouter API key (free)</label>
     <div class="key-row">
-      <input type="password" id="api-key" placeholder="sk-ant-..." />
+      <input type="password" id="api-key" placeholder="sk-or-..." />
     </div>
-    <p class="key-hint">Your key is never stored or sent anywhere except directly to Anthropic. Get one at console.anthropic.com</p>
+    <p class="key-hint">Free at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> — sign up with Google, copy your key, paste here. Never stored.</p>
   </div>
 
   <div class="card">
@@ -122,7 +122,7 @@ function switchTab(name, el) {
 async function generate() {
   const apiKey = document.getElementById('api-key').value.trim();
   const problem = document.getElementById('problem').value.trim();
-  if (!apiKey) { alert('Please enter your Anthropic API key.'); return; }
+  if (!apiKey) { alert('Please enter your OpenRouter API key — get one free at openrouter.ai'); return; }
   if (!problem) { alert('Please enter a problem statement.'); return; }
   const productType = document.getElementById('product-type').value;
   const focus = document.getElementById('focus').value;
@@ -138,16 +138,19 @@ async function generate() {
   const loadingEl = document.getElementById('loading-text');
   const interval = setInterval(() => { idx = (idx+1)%msgs.length; loadingEl.textContent = msgs[idx]; }, 2000);
   try {
-    const prompt = `You are a senior product manager. Given this product problem statement, generate structured PM artifacts.\n\nProblem: ${problem}\nProduct type: ${productType}\nFocus: ${focus}\n\nReturn ONLY a JSON object with these three keys:\n- prd: A full PRD with sections: Overview, Problem Statement, Goals & Success Metrics, User Personas, Scope (In/Out), Key Features, Technical Considerations, Risks\n- stories: 4-6 user stories in "As a [user], I want to [action], so that [outcome]" format with acceptance criteria for each\n- priority: A prioritization table using RICE framework (Reach, Impact, Confidence, Effort) for the top features, with a recommended roadmap sequence\n\nFormat each value as clean readable plain text (no markdown headers, use ALL CAPS for section names). Be specific and actionable. No preamble.`;
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const prompt = `You are a senior product manager. Given this product problem statement, generate structured PM artifacts.\n\nProblem: ${problem}\nProduct type: ${productType}\nFocus: ${focus}\n\nReturn ONLY a JSON object with these three keys:\n- prd: A full PRD with sections: Overview, Problem Statement, Goals & Success Metrics, User Personas, Scope (In/Out), Key Features, Technical Considerations, Risks\n- stories: 4-6 user stories in "As a [user], I want to [action], so that [outcome]" format with acceptance criteria for each\n- priority: A prioritization table using RICE framework (Reach, Impact, Confidence, Effort) for the top features, with a recommended roadmap sequence\n\nFormat each value as clean readable plain text (no markdown, use ALL CAPS for section names). Be specific and actionable. No preamble.`;
+    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-3.3-8b-instruct:free',
+        messages: [{ role: 'user', content: prompt }]
+      })
     });
     const data = await resp.json();
     clearInterval(interval);
     document.getElementById('loading-indicator').style.display = 'none';
-    const raw = data.content.map(b => b.text || '').join('');
+    const raw = data.choices[0].message.content;
     const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
     document.getElementById('prd-content').textContent = parsed.prd || '';
     document.getElementById('stories-content').textContent = parsed.stories || '';
@@ -155,7 +158,8 @@ async function generate() {
   } catch(err) {
     clearInterval(interval);
     document.getElementById('loading-indicator').style.display = 'none';
-    document.getElementById('prd-content').textContent = 'Error: ' + (err.message || 'Something went wrong. Check your API key and try again.');
+    document.getElementById('prd-content').textContent = 'Error: Check your API key at openrouter.ai and try again.';
+    console.error(err);
   }
   btn.disabled = false; btn.textContent = 'Generate →';
 }

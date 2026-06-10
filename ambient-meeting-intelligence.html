@@ -18,10 +18,10 @@
   label { font-size: 13px; font-weight: 500; color: #6b6b6b; display: block; margin-bottom: 8px; }
   textarea { width: 100%; min-height: 180px; resize: vertical; font-size: 13px; font-family: inherit; border: 1px solid #e5e5e3; border-radius: 8px; padding: 10px 12px; background: #f9f9f8; color: #1a1a1a; outline: none; line-height: 1.6; }
   textarea:focus { border-color: #1a1a1a; }
-  .key-row { display: flex; gap: 8px; margin-bottom: 6px; }
-  .key-row input { flex: 1; font-size: 13px; font-family: inherit; border: 1px solid #e5e5e3; border-radius: 8px; padding: 8px 12px; background: #f9f9f8; color: #1a1a1a; outline: none; }
-  .key-row input:focus { border-color: #1a1a1a; }
-  .key-hint { font-size: 12px; color: #9b9b9b; }
+  input[type=password] { width: 100%; font-size: 13px; font-family: inherit; border: 1px solid #e5e5e3; border-radius: 8px; padding: 8px 12px; background: #f9f9f8; color: #1a1a1a; outline: none; }
+  input[type=password]:focus { border-color: #1a1a1a; }
+  .key-hint { font-size: 12px; color: #9b9b9b; margin-top: 6px; }
+  .key-hint a { color: #1a6db5; }
   .sample-btn { font-size: 12px; color: #1a6db5; background: none; border: none; cursor: pointer; padding: 0; margin-top: 6px; font-family: inherit; }
   .btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 1.5rem; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -61,11 +61,9 @@
   </div>
 
   <div class="card">
-    <label>Anthropic API key</label>
-    <div class="key-row">
-      <input type="password" id="api-key" placeholder="sk-ant-..." />
-    </div>
-    <p class="key-hint">Never stored. Sent directly to Anthropic only. Get yours at console.anthropic.com</p>
+    <label>OpenRouter API key (free)</label>
+    <input type="password" id="api-key" placeholder="sk-or-..." />
+    <p class="key-hint">Free at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> — sign up with Google, copy your key, paste here. Never stored.</p>
   </div>
 
   <div class="card">
@@ -87,22 +85,10 @@
         <p class="summary-text" id="summary-out"></p>
       </div>
       <div class="grid">
-        <div class="result-card">
-          <h3>Decisions made</h3>
-          <div id="decisions-out"></div>
-        </div>
-        <div class="result-card">
-          <h3>Action items</h3>
-          <div id="actions-out"></div>
-        </div>
-        <div class="result-card">
-          <h3>Open questions</h3>
-          <div id="questions-out"></div>
-        </div>
-        <div class="result-card">
-          <h3>Meeting sentiment</h3>
-          <div id="sentiment-out"></div>
-        </div>
+        <div class="result-card"><h3>Decisions made</h3><div id="decisions-out"></div></div>
+        <div class="result-card"><h3>Action items</h3><div id="actions-out"></div></div>
+        <div class="result-card"><h3>Open questions</h3><div id="questions-out"></div></div>
+        <div class="result-card"><h3>Meeting sentiment</h3><div id="sentiment-out"></div></div>
       </div>
     </div>
   </div>
@@ -115,7 +101,7 @@ function loadSample() { document.getElementById('transcript').value = SAMPLE; }
 async function analyze() {
   const apiKey = document.getElementById('api-key').value.trim();
   const transcript = document.getElementById('transcript').value.trim();
-  if (!apiKey) { alert('Please enter your Anthropic API key.'); return; }
+  if (!apiKey) { alert('Please enter your OpenRouter API key — get one free at openrouter.ai'); return; }
   if (!transcript) { alert('Please paste a transcript first.'); return; }
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true; btn.textContent = 'Analyzing...';
@@ -126,18 +112,18 @@ async function analyze() {
   let i = 0;
   const interval = setInterval(() => { i=(i+1)%msgs.length; document.getElementById('loading-text').textContent = msgs[i]; }, 1800);
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 1000,
+        model: 'meta-llama/llama-3.3-8b-instruct:free',
         messages: [{ role: 'user', content: `Analyze this meeting transcript and return ONLY a JSON object with these keys:\n- summary: 2-3 sentence plain-text summary\n- decisions: array of strings (max 4)\n- actions: array of objects with "task" and "owner" fields (max 5)\n- questions: array of strings, open questions not yet resolved (max 4)\n- sentiment: object with "aligned" (0-100), "uncertain" (0-100), "blocked" (0-100) — must sum to 100\n\nTranscript:\n${transcript}\n\nReturn ONLY the JSON. No markdown, no preamble.` }]
       })
     });
     const data = await resp.json();
     clearInterval(interval);
     document.getElementById('loading-row').style.display = 'none';
-    const raw = data.content.map(b => b.text||'').join('');
+    const raw = data.choices[0].message.content;
     const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
     document.getElementById('summary-out').textContent = parsed.summary || '';
     const decisionsEl = document.getElementById('decisions-out');
@@ -154,8 +140,9 @@ async function analyze() {
   } catch(err) {
     clearInterval(interval);
     document.getElementById('loading-row').style.display = 'none';
-    document.getElementById('summary-out').textContent = 'Error: ' + (err.message || 'Check your API key and try again.');
+    document.getElementById('summary-out').textContent = 'Error: Check your API key at openrouter.ai and try again.';
     document.getElementById('results-area').style.display = 'block';
+    console.error(err);
   }
   btn.disabled = false; btn.textContent = 'Extract insights →';
 }
