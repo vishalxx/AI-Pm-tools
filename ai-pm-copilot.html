@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI PM Copilot</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9f9f8; color: #1a1a1a; min-height: 100vh; }
+  .topbar { background: #fff; border-bottom: 1px solid #e5e5e3; padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .topbar h1 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #e8f4fd; color: #1a6db5; font-weight: 500; }
+  .container { max-width: 760px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+  .hero { margin-bottom: 2.5rem; }
+  .hero h2 { font-size: 28px; font-weight: 600; color: #1a1a1a; line-height: 1.3; }
+  .hero p { font-size: 15px; color: #6b6b6b; margin-top: 8px; }
+  .card { background: #fff; border: 1px solid #e5e5e3; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+  label { font-size: 13px; font-weight: 500; color: #6b6b6b; display: block; margin-bottom: 8px; }
+  textarea { width: 100%; min-height: 100px; resize: vertical; font-size: 14px; font-family: inherit; border: 1px solid #e5e5e3; border-radius: 8px; padding: 10px 12px; background: #f9f9f8; color: #1a1a1a; outline: none; line-height: 1.6; }
+  textarea:focus { border-color: #1a1a1a; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  select { width: 100%; font-size: 14px; font-family: inherit; border: 1px solid #e5e5e3; border-radius: 8px; padding: 9px 12px; background: #f9f9f8; color: #1a1a1a; outline: none; }
+  .btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 1.5rem; letter-spacing: 0.01em; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn:hover:not(:disabled) { background: #333; }
+  .output-section { display: none; }
+  .output-section.visible { display: block; }
+  .tab-bar { display: flex; gap: 0; margin-bottom: 0; border-bottom: 1px solid #e5e5e3; }
+  .tab { font-size: 13px; padding: 8px 18px 10px; cursor: pointer; color: #6b6b6b; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; font-weight: 500; }
+  .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .output-card { background: #fff; border: 1px solid #e5e5e3; border-top: none; border-radius: 0 0 12px 12px; padding: 1.5rem; }
+  .tab-bar-wrapper { background: #fff; border: 1px solid #e5e5e3; border-bottom: none; border-radius: 12px 12px 0 0; padding: 0 0.5rem; }
+  pre { font-size: 13.5px; font-family: inherit; color: #1a1a1a; white-space: pre-wrap; line-height: 1.75; }
+  .loading-row { display: flex; align-items: center; gap: 10px; padding: 1.5rem; color: #6b6b6b; font-size: 14px; }
+  .spinner { width: 16px; height: 16px; border: 2px solid #e5e5e3; border-top-color: #1a1a1a; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .key-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .key-row input { flex: 1; font-size: 13px; font-family: inherit; border: 1px solid #e5e5e3; border-radius: 8px; padding: 8px 12px; background: #f9f9f8; color: #1a1a1a; outline: none; }
+  .key-row input:focus { border-color: #1a1a1a; }
+  .key-hint { font-size: 12px; color: #9b9b9b; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>AI PM Copilot</h1>
+    <span class="badge">powered by Claude</span>
+  </div>
+</div>
+<div class="container">
+  <div class="hero">
+    <h2>From problem to PRD in seconds.</h2>
+    <p>Describe your product problem. Get a full PRD, user stories, and RICE prioritization — powered by AI.</p>
+  </div>
+
+  <div class="card">
+    <label>Anthropic API key</label>
+    <div class="key-row">
+      <input type="password" id="api-key" placeholder="sk-ant-..." />
+    </div>
+    <p class="key-hint">Your key is never stored or sent anywhere except directly to Anthropic. Get one at console.anthropic.com</p>
+  </div>
+
+  <div class="card">
+    <label>Product problem statement</label>
+    <textarea id="problem" placeholder="e.g. Users abandon our onboarding flow because setup takes too long and they don't understand the value before completing it..."></textarea>
+  </div>
+
+  <div class="row" style="margin-bottom: 1rem;">
+    <div class="card" style="margin-bottom:0">
+      <label>Product type</label>
+      <select id="product-type">
+        <option>B2B SaaS</option>
+        <option>Consumer app</option>
+        <option>Mobile</option>
+        <option>Platform / API</option>
+        <option>Hardware + software</option>
+      </select>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <label>Focus area</label>
+      <select id="focus">
+        <option>Full PRD + stories + priority</option>
+        <option>PRD only</option>
+        <option>User stories only</option>
+        <option>Prioritization only</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="btn" id="generate-btn" onclick="generate()">Generate →</button>
+
+  <div class="output-section" id="output-section">
+    <div class="tab-bar-wrapper">
+      <div class="tab-bar">
+        <button class="tab active" onclick="switchTab('prd', this)">PRD</button>
+        <button class="tab" onclick="switchTab('stories', this)">User stories</button>
+        <button class="tab" onclick="switchTab('priority', this)">Prioritization</button>
+      </div>
+    </div>
+    <div class="output-card">
+      <div id="loading-indicator" class="loading-row" style="display:none;">
+        <div class="spinner"></div>
+        <span id="loading-text">Generating your PRD...</span>
+      </div>
+      <div class="tab-content active" id="tab-prd"><pre id="prd-content"></pre></div>
+      <div class="tab-content" id="tab-stories"><pre id="stories-content"></pre></div>
+      <div class="tab-content" id="tab-priority"><pre id="priority-content"></pre></div>
+    </div>
+  </div>
+</div>
+<script>
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+async function generate() {
+  const apiKey = document.getElementById('api-key').value.trim();
+  const problem = document.getElementById('problem').value.trim();
+  if (!apiKey) { alert('Please enter your Anthropic API key.'); return; }
+  if (!problem) { alert('Please enter a problem statement.'); return; }
+  const productType = document.getElementById('product-type').value;
+  const focus = document.getElementById('focus').value;
+  const btn = document.getElementById('generate-btn');
+  btn.disabled = true; btn.textContent = 'Generating...';
+  document.getElementById('output-section').classList.add('visible');
+  document.getElementById('loading-indicator').style.display = 'flex';
+  document.getElementById('prd-content').textContent = '';
+  document.getElementById('stories-content').textContent = '';
+  document.getElementById('priority-content').textContent = '';
+  const msgs = ['Generating your PRD...', 'Writing user stories...', 'Building prioritization framework...'];
+  let idx = 0;
+  const loadingEl = document.getElementById('loading-text');
+  const interval = setInterval(() => { idx = (idx+1)%msgs.length; loadingEl.textContent = msgs[idx]; }, 2000);
+  try {
+    const prompt = `You are a senior product manager. Given this product problem statement, generate structured PM artifacts.\n\nProblem: ${problem}\nProduct type: ${productType}\nFocus: ${focus}\n\nReturn ONLY a JSON object with these three keys:\n- prd: A full PRD with sections: Overview, Problem Statement, Goals & Success Metrics, User Personas, Scope (In/Out), Key Features, Technical Considerations, Risks\n- stories: 4-6 user stories in "As a [user], I want to [action], so that [outcome]" format with acceptance criteria for each\n- priority: A prioritization table using RICE framework (Reach, Impact, Confidence, Effort) for the top features, with a recommended roadmap sequence\n\nFormat each value as clean readable plain text (no markdown headers, use ALL CAPS for section names). Be specific and actionable. No preamble.`;
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await resp.json();
+    clearInterval(interval);
+    document.getElementById('loading-indicator').style.display = 'none';
+    const raw = data.content.map(b => b.text || '').join('');
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    document.getElementById('prd-content').textContent = parsed.prd || '';
+    document.getElementById('stories-content').textContent = parsed.stories || '';
+    document.getElementById('priority-content').textContent = parsed.priority || '';
+  } catch(err) {
+    clearInterval(interval);
+    document.getElementById('loading-indicator').style.display = 'none';
+    document.getElementById('prd-content').textContent = 'Error: ' + (err.message || 'Something went wrong. Check your API key and try again.');
+  }
+  btn.disabled = false; btn.textContent = 'Generate →';
+}
+</script>
+</body>
+</html>
